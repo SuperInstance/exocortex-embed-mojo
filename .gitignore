@@ -1,0 +1,23 @@
+# Mojo build artifacts
+__pycache__/
+*.mojopkg
+*.️mlir
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+credentials.*
+*.secret
+*.key
+*.pem
