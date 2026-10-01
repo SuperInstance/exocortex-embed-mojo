@@ -13,7 +13,14 @@ from exocortex_embed.index import VectorIndex
 from exocortex_embed.quantize import ScalarQuantizer
 
 
-fn main() raises:
+def copy_vec(values: List[Float64]) -> List[Float64]:
+    var result = List[Float64](capacity=len(values))
+    for i in range(len(values)):
+        result.append(values[i])
+    return result^
+
+
+def main() raises:
     print("=== exocortex-embed-mojo demo ===")
     print()
 
@@ -54,16 +61,16 @@ fn main() raises:
     r0.append(1.0); r0.append(2.0)
     var r1 = List[Float64](capacity=2)
     r1.append(3.0); r1.append(4.0)
-    A.append(r0); A.append(r1)
+    A.append(r0^); A.append(r1^)
 
     var B = List[List[Float64]](capacity=2)
     var c0 = List[Float64](capacity=2)
     c0.append(5.0); c0.append(6.0)
     var c1 = List[Float64](capacity=2)
     c1.append(7.0); c1.append(8.0)
-    B.append(c0); B.append(c1)
+    B.append(c0^); B.append(c1^)
 
-    let C = matmul(A, B)
+    var C = matmul(A, B)
     print("matmul(A, B) =")
     for i in range(len(C)):
         print("  [", end="")
@@ -73,7 +80,7 @@ fn main() raises:
             print(C[i][j], end="")
         print("]")
 
-    let AT = transpose(A)
+    var AT = transpose(A)
     print("transpose(A) =")
     for i in range(len(AT)):
         print("  [", end="")
@@ -102,10 +109,10 @@ fn main() raises:
     var query = List[Float64](capacity=4)
     query.append(0.15); query.append(0.25); query.append(0.35); query.append(0.45)
 
-    let results = index.search(query, 3)
+    var results = index.search(query, 3)
     print("Top-3 results for query:")
     for i in range(len(results)):
-        print("  ", results[i].get[0](), " score=", results[i].get[1]())
+        print("  ", results[i][0], " score=", results[i][1])
     print()
 
     # --- Random Projection ---
@@ -115,7 +122,7 @@ fn main() raises:
     high_dim.append(1.0); high_dim.append(0.0); high_dim.append(1.0); high_dim.append(0.0)
     high_dim.append(1.0); high_dim.append(0.0); high_dim.append(1.0); high_dim.append(0.0)
 
-    let low_dim = rp.project(high_dim)
+    var low_dim = rp.project(high_dim)
     print("8D → 3D projection: [", end="")
     for i in range(len(low_dim)):
         if i > 0:
@@ -128,12 +135,12 @@ fn main() raises:
     print("--- Scalar Quantization ---")
     var quantizer = ScalarQuantizer(4)
     var training = List[List[Float64]](capacity=3)
-    training.append(v1)
-    training.append(v2)
-    training.append(v3)
+    training.append(copy_vec(v1))
+    training.append(copy_vec(v2))
+    training.append(copy_vec(v3))
     quantizer.fit(training)
 
-    let q1 = quantizer.quantize(v1)
+    var q1 = quantizer.quantize(v1)
     print("quantize(doc1) = [", end="")
     for i in range(len(q1)):
         if i > 0:
@@ -141,7 +148,7 @@ fn main() raises:
         print(Int(q1[i]), end="")
     print("]")
 
-    let dq1 = quantizer.dequantize(q1)
+    var dq1 = quantizer.dequantize(q1)
     print("dequantize     = [", end="")
     for i in range(len(dq1)):
         if i > 0:

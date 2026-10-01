@@ -35,18 +35,18 @@ struct ScalarQuantizer:
     var maxs: List[Float64]       # per-dimension maximum
     var fitted: Bool
 
-    fn __init__(inout self, dim: Int):
+    def __init__(out self, dim: Int):
         self.dim = dim
         self.fitted = False
         self.mins = List[Float64](capacity=dim)
         self.maxs = List[Float64](capacity=dim)
-        for i in range(dim):
+        for _ in range(dim):
             self.mins.append(0.0)
             self.maxs.append(0.0)
 
     ## Fit the quantizer to a collection of vectors.
     ## Computes per-dimension min and max across all vectors.
-    fn fit(inout self, inout vectors: List[List[Float64]]):
+    def fit(mut self, vectors: List[List[Float64]]):
         if len(vectors) == 0:
             return
 
@@ -57,7 +57,7 @@ struct ScalarQuantizer:
 
         for i in range(len(vectors)):
             for j in range(self.dim):
-                let val = vectors[i][j]
+                var val = vectors[i][j]
                 if val < self.mins[j]:
                     self.mins[j] = val
                 if val > self.maxs[j]:
@@ -67,39 +67,39 @@ struct ScalarQuantizer:
 
     ## Quantize a Float64 vector → Int8 vector.
     ## Maps each dimension's value from [min, max] → [-128, 127].
-    fn quantize(inout self, inout v: List[Float64]) -> List[Int8]:
+    def quantize(mut self, v: List[Float64]) -> List[Int8]:
         var result = List[Int8](capacity=self.dim)
         for j in range(self.dim):
-            let span = self.maxs[j] - self.mins[j]
+            var span = self.maxs[j] - self.mins[j]
             if span == 0.0:
                 result.append(Int8(0))
             else:
                 # Normalize to [0, 255], then shift to [-128, 127]
-                let normalized = (v[j] - self.mins[j]) / span * 255.0
-                let quantized = Int(normalized) - 128
+                var normalized = (v[j] - self.mins[j]) / span * 255.0
+                var quantized = Int(normalized) - 128
                 # Clamp to [-128, 127]
-                let clamped = max(-128, min(127, quantized))
+                var clamped = max(-128, min(127, quantized))
                 result.append(Int8(clamped))
 
-        return result
+        return result^
 
     ## Dequantize an Int8 vector → Float64 vector.
-    fn dequantize(inout self, inout q: List[Int8]) -> List[Float64]:
+    def dequantize(mut self, q: List[Int8]) -> List[Float64]:
         var result = List[Float64](capacity=self.dim)
         for j in range(self.dim):
-            let span = self.maxs[j] - self.mins[j]
-            let reconstructed = self.mins[j] + (Float64(Int(q[j])) + 128.0) * span / 255.0
+            var span = self.maxs[j] - self.mins[j]
+            var reconstructed = self.mins[j] + (Float64(Int(q[j])) + 128.0) * span / 255.0
             result.append(reconstructed)
 
-        return result
+        return result^
 
     ## Approximate Euclidean distance between two quantized vectors.
     ## Computed entirely in Int8 space — no Float64 needed at search time.
     ## Returns the distance as a Float64 for comparison purposes.
-    fn quantized_distance(inout self, inout q1: List[Int8], inout q2: List[Int8]) -> Float64:
+    def quantized_distance(mut self, q1: List[Int8], q2: List[Int8]) -> Float64:
         var sum_sq: Float64 = 0.0
         for j in range(self.dim):
-            let diff = Float64(Int(q1[j]) - Int(q2[j]))
+            var diff = Float64(Int(q1[j]) - Int(q2[j]))
             sum_sq += diff * diff
 
         # Scale back to original space — each quant step = span/255 per dimension
@@ -111,14 +111,14 @@ struct ScalarQuantizer:
 
 
 ## Helper: min for Int
-fn min(a: Int, b: Int) -> Int:
+def min(a: Int, b: Int) -> Int:
     if a < b:
         return a
     return b
 
 
 ## Helper: max for Int
-fn max(a: Int, b: Int) -> Int:
+def max(a: Int, b: Int) -> Int:
     if a > b:
         return a
     return b

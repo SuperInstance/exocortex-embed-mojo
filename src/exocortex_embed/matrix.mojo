@@ -13,10 +13,10 @@ from .vector import dot
 ##   Naive O(n³) matrix multiply with SIMD-accelerated inner product.
 ##   A: m×p, B: p×n  →  result: m×n
 ## ---------------------------------------------------------------------------
-fn matmul(inout A: List[List[Float64]], inout B: List[List[Float64]]) -> List[List[Float64]]:
-    let m = len(A)
-    let p = len(A[0])
-    let n = len(B[0])
+def matmul(A: List[List[Float64]], B: List[List[Float64]]) -> List[List[Float64]]:
+    var m = len(A)
+    var p = len(A[0])
+    var n = len(B[0])
 
     var result = List[List[Float64]](capacity=m)
 
@@ -26,56 +26,56 @@ fn matmul(inout A: List[List[Float64]], inout B: List[List[Float64]]) -> List[Li
         var col = List[Float64](capacity=p)
         for i in range(p):
             col.append(B[i][j])
-        BT.append(col)
+        BT.append(col^)
 
     for i in range(m):
         var row = List[Float64](capacity=n)
         for j in range(n):
             # Inner product of A row i with B column j (= BT row j)
-            let val = dot(A[i], BT[j])
+            var val = dot(A[i], BT[j])
             row.append(val)
-        result.append(row)
+        result.append(row^)
 
-    return result
+    return result^
 
 
 ## ---------------------------------------------------------------------------
 ## transpose(A) -> List[List[Float64]]
 ##   Transpose an m×n matrix to n×m.
 ## ---------------------------------------------------------------------------
-fn transpose(inout A: List[List[Float64]]) -> List[List[Float64]]:
-    let m = len(A)
+def transpose(A: List[List[Float64]]) -> List[List[Float64]]:
+    var m = len(A)
     if m == 0:
         return List[List[Float64]]()
-    let n = len(A[0])
+    var n = len(A[0])
 
     var result = List[List[Float64]](capacity=n)
     for j in range(n):
         var col = List[Float64](capacity=m)
         for i in range(m):
             col.append(A[i][j])
-        result.append(col)
+        result.append(col^)
 
-    return result
+    return result^
 
 
 ## ---------------------------------------------------------------------------
 ## row(A, i) -> List[Float64]
 ##   Extract row i from matrix A (O(1) for row-major storage, but we copy).
 ## ---------------------------------------------------------------------------
-fn row(inout A: List[List[Float64]], i: Int) -> List[Float64]:
+def row(A: List[List[Float64]], i: Int) -> List[Float64]:
     var result = List[Float64](capacity=len(A[i]))
     for j in range(len(A[i])):
         result.append(A[i][j])
-    return result
+    return result^
 
 
 ## ---------------------------------------------------------------------------
 ## col(A, j) -> List[Float64]
 ##   Extract column j from matrix A.
 ## ---------------------------------------------------------------------------
-fn col(inout A: List[List[Float64]], j: Int) -> List[Float64]:
+def col(A: List[List[Float64]], j: Int) -> List[Float64]:
     var result = List[Float64](capacity=len(A))
     for i in range(len(A)):
         result.append(A[i][j])
-    return result
+    return result^

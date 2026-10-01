@@ -19,9 +19,11 @@ struct Entry:
     var id: String
     var vector: List[Float64]
 
-    fn __init__(inout self, owned id: String, owned vector: List[Float64]):
-        self.id = id^
-        self.vector = vector^
+    def __init__(out self, id: String, vector: List[Float64]):
+        # List is not copyable and `owned` params are gone in Mojo 1.2 —
+        # explicit .copy() preserves the original take-ownership semantics.
+        self.id = id
+        self.vector = vector.copy()
 
 
 ## ---------------------------------------------------------------------------
@@ -31,54 +33,57 @@ struct VectorIndex:
     var entries: List[Entry]
     var dim: Int
 
-    fn __init__(inout self, dim: Int):
+    def __init__(out self, dim: Int):
         self.dim = dim
         self.entries = List[Entry]()
 
     ## Add a vector to the index.
-    fn add(inout self, owned id: String, inout vector: List[Float64]):
+    def add(mut self, id: String, vector: List[Float64]):
         # Copy the vector into the index
         var v = List[Float64](capacity=len(vector))
         for i in range(len(vector)):
             v.append(vector[i])
-        self.entries.append(Entry(id^, v^))
+        self.entries.append(Entry(id, v^))
 
     ## Search for top-k vectors by cosine similarity.
     ## Returns List of (id, score) tuples sorted descending by similarity.
-    fn search(inout self, inout query: List[Float64], k: Int) -> List[Tuple[String, Float64]]:
+    def search(mut self, query: List[Float64], k: Int) -> List[Tuple[String, Float64]]:
         var scores = List[Tuple[String, Float64]](capacity=len(self.entries))
 
         for i in range(len(self.entries)):
-            let sim = cosine_similarity(query, self.entries[i].vector)
+            var sim = cosine_similarity(query, self.entries[i].vector)
             scores.append(Tuple(self.entries[i].id, sim))
 
         # Simple selection sort for top-k (fine for small k)
         var result = List[Tuple[String, Float64]](capacity=k)
         var used = List[Bool](capacity=len(scores))
-        for i in range(len(scores)):
+        for _ in range(len(scores)):
             used.append(False)
 
         for _ in range(min(k, len(scores))):
             var best_idx: Int = -1
             var best_score: Float64 = -2.0
             for i in range(len(scores)):
-                if not used[i] and scores[i].get[1]() > best_score:
-                    best_score = scores[i].get[1]()
+                if not used[i] and scores[i][1] > best_score:
+                    best_score = scores[i][1]
                     best_idx = i
             if best_idx >= 0:
                 used[best_idx] = True
-                result.append(scores[best_idx])
+                # Tuple is not implicitly copyable here — rebuild from elements
+                result.append(Tuple(scores[best_idx][0], scores[best_idx][1]))
 
-        return result
+        return result^
 
     ## Remove a vector by id.
-    fn remove(inout self, id: String):
+    def remove(mut self, id: String):
+        # Entry holds a List (not transferable out of a subscript through a
+        # mut ref in Mojo 1.2) — rebuild kept entries via the copying ctor.
         var new_entries = List[Entry](capacity=len(self.entries))
         for i in range(len(self.entries)):
             if self.entries[i].id != id:
-                new_entries.append(self.entries[i])
+                new_entries.append(Entry(self.entries[i].id, self.entries[i].vector))
         self.entries = new_entries^
 
     ## Return the number of vectors in the index.
-    fn size(inout self) -> Int:
+    def size(mut self) -> Int:
         return len(self.entries)
